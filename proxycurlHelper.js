@@ -39,11 +39,15 @@ async function enrichProspectWithProxycurl(prospectData, logger) {
             linkedin_profile_url: linkedinUrl, 
             extra: 'include',
             fallback_to_cache: 'on-error', };
+            const params = new URLSearchParams();
+            params.append("url", linkedinUrl);
+            params.append("linkedin_profile_url", linkedinUrl);
+            params.append("extra", "include");
+            params.append("fallback_to_cache", "on-error");
             // use fetch to get PERSON_PROFILE_URL with the params
-            const personResponse = fetch(PERSON_PROFILE_URL, {
+            const personResponse = fetch(`${PERSON_PROFILE_URL}?${params}`, {
                 method: 'GET',
                 headers: PROXYCURL_HEADERS,
-                body: JSON.stringify(personProfileParams),
                 timeout: 30000, // 30 second timeout
             });
             
