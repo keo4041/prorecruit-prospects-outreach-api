@@ -44,7 +44,7 @@ async function enrichProspectWithProxycurl(prospectData, logger) {
             linkedin_profile_url: linkedinUrl, 
             extra: 'include',
             fallback_to_cache: 'on-error', };
-            const params = new URLSearchParams();
+            /* const params = new URLSearchParams();
             params.append("url", linkedinUrl);
             params.append("linkedin_profile_url", linkedinUrl);
             params.append("extra", "include");
@@ -56,16 +56,30 @@ async function enrichProspectWithProxycurl(prospectData, logger) {
                 timeout: 30000, // 30 second timeout
             });
             
+            personResponse.then(response => {
+                if (response.ok) {
+                    logger.info(response)
+                    return response.json();
+                } else {
+                    logger.error(`HTTP error! Status: ${response.status}`);
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+            })
+            .then(data => {
+                personData = data;
+                logger.info(personData)
+            }) */
+            
 
-
-        /* const personResponse = await axios.get(PERSON_PROFILE_URL, {
+        const personResponse = await axios.get(PERSON_PROFILE_URL, {
             headers: PROXYCURL_HEADERS,
             params: personProfileParams,
             timeout: 30000, // 30 second timeout
-        }); */
+        });
         logger.info(`Enriching profile for: ${linkedinUrl} - axios done`);
+        logger.info(personResponse);
         personData = personResponse.data;
-        logger.info(personData)
+        logger.info(personResponse)
 
         // Basic checks on personData
         if (!personData || personData.detail === 'Profile not found') {
