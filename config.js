@@ -1,7 +1,7 @@
 const admin = require('firebase-admin');
 
 // --- Limits ---
-const MAX_PROSPECTS_TO_ENRICH_PER_RUN = 5; // Adjust based on budget/time
+const MAX_PROSPECTS_TO_ENRICH_PER_RUN = 2; // Adjust based on budget/time
 const MAX_INITIAL_EMAILS_PER_RUN = 25;     // Target weekly send list size
 const MAX_FOLLOWUP_EMAILS_PER_RUN = 75;   // Adjust as needed
 

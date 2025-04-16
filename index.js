@@ -1,7 +1,6 @@
 const functions = require('@google-cloud/functions-framework');
 const admin = require('firebase-admin');
 const {logger} = require("firebase-functions");
-const bunyan = require('bunyan');
 
 const { enrichProspectWithProxycurl } = require('./proxycurlHelper');
 const { updateProspect } = require('./firestoreHelper');
@@ -266,7 +265,7 @@ async function handleFollowupEmails() {
         const prospectsToCheckQuery = db.collection('prospects')
             .where('outreachStatus', 'in', followupEligibleStatuses)
             // Optional: Add safety limit if list is huge, but filtering is done in code
-            // .limit(MAX_FOLLOWUP_EMAILS_PER_RUN * 5) // Fetch more candidates than needed
+            .limit(MAX_FOLLOWUP_EMAILS_PER_RUN * 5) // Fetch more candidates than needed
             ;
 
         const snapshot = await prospectsToCheckQuery.get();
@@ -376,12 +375,12 @@ functions.http('processProspects', async (req, res) => {
     logger.info('Received request to process prospects.');
 
     // Optional: Add security check (e.g., verify request comes from Cloud Scheduler)
-    // const isScheduler = req.get('User-Agent') === 'Google-Cloud-Scheduler';
-    // if (!isScheduler && process.env.NODE_ENV === 'production') {
-    //    logger.warn('Request rejected: Not from Cloud Scheduler.');
-    //    res.status(403).send('Forbidden');
-    //    return;
-    // }
+    const isScheduler = req.get('User-Agent') === 'Google-Cloud-Scheduler';
+    if (!isScheduler && process.env.NODE_ENV === 'production') {
+       logger.warn('Request rejected: Not from Cloud Scheduler.');
+       res.status(403).send('Forbidden');
+       return;
+    }
 
     try {
         // --- Phase 1: Enrichment ---
