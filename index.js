@@ -126,7 +126,8 @@ async function handleEnrichment() {
 
     try {
         const prospectsToEnrichQuery = db.collection('prospects')
-            .where('enrichmentTimestamp', '==', null) // Primary condition
+            .where('enrichmentSuccess', '!=', true) // Primary condition
+            .where('linkedinUrl', '!=', "") // Primary condition
             .where('outreachStatus', '!=', OUTREACH_STATUS.DO_NOT_CONTACT) // Optional: Avoid enriching DNC
             .limit(MAX_PROSPECTS_TO_ENRICH_PER_RUN);
 

@@ -16,13 +16,13 @@ const WORK_EMAIL_LOOKUP_URL = 'https://nubela.co/proxycurl/api/linkedin/profile/
 async function enrichProspectWithProxycurl(prospectData, logger) {
     if (!PROXYCURL_API_KEY) {
         logger.error('PROXYCURL_API_KEY is not set.');
-        return { success: false, error: 'Missing API Key', updateData: { emailStatus: EMAIL_STATUS.FAILED, enrichmentTimestamp: admin.firestore.Timestamp.now() } };
+        return { success: false, error: 'Missing API Key', updateData: { emailStatus: EMAIL_STATUS.FAILED, enrichmentTimestamp: admin.firestore.Timestamp.now(), enrichmentSuccess: false } };
     }
 
     const linkedinUrl = prospectData.linkedinUrl;
     if (!linkedinUrl) {
         logger.warn(`Prospect ${prospectData.id} missing linkedinUrl. Skipping enrichment.`);
-        return { success: false, error: 'Missing LinkedIn URL', updateData: { emailStatus: EMAIL_STATUS.FAILED, enrichmentTimestamp: admin.firestore.Timestamp.now() } }; // Mark as failed
+        return { success: false, error: 'Missing LinkedIn URL', updateData: { emailStatus: EMAIL_STATUS.FAILED, enrichmentTimestamp: admin.firestore.Timestamp.now(), enrichmentSuccess: false } }; // Mark as failed
     }
 
     const updateData = {};
@@ -41,18 +41,24 @@ async function enrichProspectWithProxycurl(prospectData, logger) {
             timeout: 30000, // 30 second timeout
         });
         personData = personResponse.data;
+        logger.info(personData)
 
         // Basic checks on personData
         if (!personData || personData.detail === 'Profile not found') {
             logger.warn(`Proxycurl profile not found for ${linkedinUrl}.`);
              // Don't stop here, maybe email lookup still works? Or mark as failed? Let's mark failed for now.
-             return { success: false, error: 'Profile not found', updateData: { emailStatus: EMAIL_STATUS.FAILED, enrichmentTimestamp: admin.firestore.Timestamp.now() } };
+             return { success: false, error: 'Profile not found', updateData: { emailStatus: EMAIL_STATUS.FAILED, enrichmentTimestamp: admin.firestore.Timestamp.now(), enrichmentSuccess: false } };
         }
 
         // Map fields carefully, handle nulls/missing data from Proxycurl
         updateData.firstName = personData.first_name || prospectData.firstName || ""; // Use existing if proxycurl fails
         updateData.lastName = personData.last_name || prospectData.lastName || "";
         updateData.jobTitle = personData.occupation || prospectData.jobTitle || "";
+        updateData.industry = personData.industry || prospectData.industry || "";
+        updateData.country = personData.country_full_name || prospectData.country || "";
+        updateData.city = personData.city || prospectData.city || "";
+        updateData.linkedinUrl = linkedinUrl;
+        updateData.enrichmentSuccess = true; // Mark as successful
         updateData.companyName = personData.current_company?.name || personData.company || prospectData.company || ""; // Check current_company first
         updateData.location = personData.city && personData.country_full_name ? `${personData.city}, ${personData.country_full_name}` : personData.location || prospectData.location || "";
         // updateData.companyDomain = personData.current_company?.link ? new URL(personData.current_company.link).hostname.replace(/^www\./, '') : prospectData.hsEmailDomain || ""; // Infer domain if possible
@@ -96,15 +102,21 @@ async function enrichProspectWithProxycurl(prospectData, logger) {
             // Handle specific errors like 401 (auth), 404 (not found), 429 (rate limit)
             if (error.response.status === 404) {
                  updateData.emailStatus = EMAIL_STATUS.FAILED; // Mark as failed if profile/email not found
+                 updateData.enrichmentTimestamp = admin.firestore.Timestamp.now(); // Update timestamp
+                 updateData.enrichmentSuccess = false; // Mark as failed
                  finalEmailStatus = EMAIL_STATUS.FAILED;
             } else {
                 // For other errors (rate limits, server errors), maybe retry later? For now, mark failed.
                 updateData.emailStatus = EMAIL_STATUS.FAILED;
+                updateData.enrichmentTimestamp = admin.firestore.Timestamp.now(); // Update timestamp
+                updateData.enrichmentSuccess = false; // Mark as failed
                 finalEmailStatus = EMAIL_STATUS.FAILED;
             }
         } else {
              // Network errors etc.
              updateData.emailStatus = EMAIL_STATUS.FAILED; // Mark failed on network issues too
+             updateData.enrichmentTimestamp = admin.firestore.Timestamp.now(); // Update timestamp
+             updateData.enrichmentSuccess = false; // Mark as failed
              finalEmailStatus = EMAIL_STATUS.FAILED;
         }
     }
