@@ -24,7 +24,7 @@ async function enrichProspectWithProxycurl(prospectData, logger) {
         logger.warn(`Prospect ${prospectData.id} missing linkedinUrl. Skipping enrichment.`);
         return { success: false, error: 'Missing LinkedIn URL', updateData: { emailStatus: EMAIL_STATUS.FAILED, enrichmentTimestamp: admin.firestore.Timestamp.now(), enrichmentSuccess: false } }; // Mark as failed
     }
-
+    logger.info(`Enriching profile for: ${linkedinUrl} - 1`);
     const updateData = {};
     let personData = null;
     let workEmailData = null;
@@ -33,13 +33,14 @@ async function enrichProspectWithProxycurl(prospectData, logger) {
 
     try {
         // --- 1. Get Person Profile ---
-        logger.info(`Enriching profile for: ${linkedinUrl}`);
-        const personProfileParams = { url: linkedinUrl };
+        logger.info(`Enriching profile for: ${personProfileParams} - ${PERSON_PROFILE_URL}`);
+        const personProfileParams = { linkedin_profile_url: linkedinUrl };
         const personResponse = await axios.get(PERSON_PROFILE_URL, {
             headers: PROXYCURL_HEADERS,
             params: personProfileParams,
             timeout: 30000, // 30 second timeout
         });
+        logger.info(`Enriching profile for: ${linkedinUrl} - 2`);
         personData = personResponse.data;
         logger.info(personData)
 
@@ -53,6 +54,8 @@ async function enrichProspectWithProxycurl(prospectData, logger) {
         // Map fields carefully, handle nulls/missing data from Proxycurl
         updateData.firstName = personData.first_name || prospectData.firstName || ""; // Use existing if proxycurl fails
         updateData.lastName = personData.last_name || prospectData.lastName || "";
+        updateData.fullName = personData.full_name || prospectData.fullName || "";
+        updateData.occupation = personData.occupation || prospectData.occupation || "";
         updateData.jobTitle = personData.occupation || prospectData.jobTitle || "";
         updateData.industry = personData.industry || prospectData.industry || "";
         updateData.country = personData.country_full_name || prospectData.country || "";
@@ -61,6 +64,52 @@ async function enrichProspectWithProxycurl(prospectData, logger) {
         updateData.enrichmentSuccess = true; // Mark as successful
         updateData.companyName = personData.current_company?.name || personData.company || prospectData.company || ""; // Check current_company first
         updateData.location = personData.city && personData.country_full_name ? `${personData.city}, ${personData.country_full_name}` : personData.location || prospectData.location || "";
+        // add the remaining properties from prospectData to updateData
+        updateData.numberOfEmployees = personData.current_company?.employee_count || prospectData.numberOfEmployees || "";
+        updateData.companyWebsite = personData.current_company?.website || prospectData.companyWebsite || "";
+        updateData.companyLinkedinUrl = personData.current_company?.linkedin_url || prospectData.companyLinkedinUrl || "";
+        updateData.companyIndustry = personData.current_company?.industry || prospectData.companyIndustry || "";
+        updateData.companyDescription = personData.current_company?.description || prospectData.companyDescription || "";
+        updateData.companyCity = personData.current_company?.city || prospectData.companyCity || "";
+        updateData.companyCountry = personData.current_company?.country_full_name || prospectData.companyCountry || "";
+        updateData.companyLocation = personData.current_company?.city && personData.current_company?.country_full_name ? `${personData.current_company.city}, ${personData.current_company.country_full_name}` : prospectData.companyLocation || "";
+        updateData.enrichmentTimestamp = admin.firestore.Timestamp.now();
+        updateData.linkedinUrlFound = true;
+        updateData.linkedinProfileUrl = linkedinUrl;
+        updateData.groups = personData.groups || [];
+        updateData.articles = personData.articles || [];
+        updateData.skills = personData.skills || [];
+        updateData.languages = personData.languages || [];
+        updateData.interests = personData.interests || [];
+        updateData.educations = personData.educations || [];
+        updateData.experiences = personData.experiences || [];
+        updateData.headline = personData.headline || "";
+        updateData.summary = personData.summary || "";  
+        updateData.accomplishment_publications = personData.accomplishment_publications || [];
+        updateData.accomplishment_projects = personData.accomplishment_projects || [];
+        updateData.accomplishment_certifications = personData.accomplishment_certifications || [];
+        updateData.accomplishment_awards = personData.accomplishment_awards || [];
+        updateData.accomplishment_honors = personData.accomplishment_honors || [];
+        updateData.accomplishment_courses = personData.accomplishment_courses || [];
+        updateData.accomplishment_organisations = personData.accomplishment_organisations || [];
+        updateData.accomplishment_events = personData.accomplishment_events || [];
+        updateData.accomplishment_jobs = personData.accomplishment_jobs || [];
+        updateData.accomplishment_skills = personData.accomplishment_skills || [];
+        updateData.accomplishment_languages = personData.accomplishment_languages || [];
+        updateData.accomplishment_interests = personData.accomplishment_interests || [];
+        updateData.accomplishment_educations = personData.accomplishment_educations || [];
+        updateData.accomplishment_experiences = personData.accomplishment_experiences || [];
+        updateData.volunteer_work = personData.volunteer_work || [];
+        updateData.birth_date = personData.birth_date || "";
+        updateData.personal_emails = personData.personal_emails || "";
+        updateData.personal_numbers = personData.personal_numbers || "";
+        updateData.personal_websites = personData.personal_websites || "";
+        updateData.personal_urls = personData.personal_urls || "";
+        updateData.personal_addresses = personData.personal_addresses || "";
+        updateData.gender = personData.gender || "";
+        updateData.interests = personData.interests || [];
+        updateData.extra = personData.extra || [];
+
         // updateData.companyDomain = personData.current_company?.link ? new URL(personData.current_company.link).hostname.replace(/^www\./, '') : prospectData.hsEmailDomain || ""; // Infer domain if possible
 
          // --- 2. Get Work Email ---
