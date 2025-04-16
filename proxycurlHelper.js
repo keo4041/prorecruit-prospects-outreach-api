@@ -30,17 +30,18 @@ async function enrichProspectWithProxycurl(prospectData, logger) {
     let workEmailData = null;
     let success = true;
     let finalEmailStatus = EMAIL_STATUS.FAILED; // Default to failed
+    logger.info(`Before try catch: ${linkedinUrl}`);
 
     try {
         // --- 1. Get Person Profile ---
-        logger.info(`Enriching profile for: ${personProfileParams} - ${PERSON_PROFILE_URL}`);
+        logger.info(`Enriching profile for: ${personProfileParams} - ${PERSON_PROFILE_URL} - axios start`);
         const personProfileParams = { linkedin_profile_url: linkedinUrl };
         const personResponse = await axios.get(PERSON_PROFILE_URL, {
             headers: PROXYCURL_HEADERS,
             params: personProfileParams,
             timeout: 30000, // 30 second timeout
         });
-        logger.info(`Enriching profile for: ${linkedinUrl} - 2`);
+        logger.info(`Enriching profile for: ${linkedinUrl} - axios done`);
         personData = personResponse.data;
         logger.info(personData)
 
@@ -169,6 +170,7 @@ async function enrichProspectWithProxycurl(prospectData, logger) {
              finalEmailStatus = EMAIL_STATUS.FAILED;
         }
     }
+    logger.info(`end of try catch for ${linkedinUrl} - ${finalEmailStatus} - ${success} - ${updateData}`)
 
     updateData.enrichmentTimestamp = admin.firestore.Timestamp.now(); // Always update timestamp
 
