@@ -364,8 +364,8 @@ async function handleFollowupEmails() {
 // --- Cloud Function Entry Point ---
 functions.http('processProspects', async (req, res) => {
     // Initialize on first invocation (or cold start)
-    console.log("Initializing... - console");
-    logger.info('Initializing... - logger');
+    console.log("Initializing... - console", req.get('User-Agent'));
+    logger.info('Initializing... - logger', req.get('User-Agent'));
     try {
         initialize();
     } catch (initError) {
@@ -374,15 +374,15 @@ functions.http('processProspects', async (req, res) => {
         return; // Stop execution
     }
 
-    logger.info('Received request to process prospects.');
+    logger.info('Received request to process prospects.', req.get('User-Agent'));
 
     // Optional: Add security check (e.g., verify request comes from Cloud Scheduler)
-    const isScheduler = req.get('User-Agent') === 'Google-Cloud-Scheduler';
+    /* const isScheduler = req.get('User-Agent') === 'Google-Cloud-Scheduler';
     if (!isScheduler && process.env.NODE_ENV === 'production') {
        logger.warn('Request rejected: Not from Cloud Scheduler.');
        res.status(403).send('Forbidden');
        return;
-    }
+    } */
 
     try {
         // --- Phase 1: Enrichment ---
