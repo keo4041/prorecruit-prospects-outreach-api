@@ -34,17 +34,26 @@ async function enrichProspectWithProxycurl(prospectData, logger) {
 
     try {
         // --- 1. Get Person Profile ---
-        logger.info(`Enriching profile for: ${PERSON_PROFILE_URL} - axios start`);
-        const personProfileParams = { "url": linkedinUrl, 
-            "linkedin_profile_url": linkedinUrl, 
-            "extra": 'include',
-            'fallback_to_cache': 'on-error', };
-            logger.info(`personProfileParams: ${personProfileParams}`);
-        const personResponse = await axios.get(PERSON_PROFILE_URL, {
+        logger.info(`PERSON_PROFILE_URL: ${PERSON_PROFILE_URL} - axios start`);
+        const personProfileParams = { url: linkedinUrl, 
+            linkedin_profile_url: linkedinUrl, 
+            extra: 'include',
+            fallback_to_cache: 'on-error', };
+            // use fetch to get PERSON_PROFILE_URL with the params
+            const personResponse = fetch(PERSON_PROFILE_URL, {
+                method: 'GET',
+                headers: PROXYCURL_HEADERS,
+                body: JSON.stringify(personProfileParams),
+                timeout: 30000, // 30 second timeout
+            });
+            
+
+
+        /* const personResponse = await axios.get(PERSON_PROFILE_URL, {
             headers: PROXYCURL_HEADERS,
             params: personProfileParams,
             timeout: 30000, // 30 second timeout
-        });
+        }); */
         logger.info(`Enriching profile for: ${linkedinUrl} - axios done`);
         personData = personResponse.data;
         logger.info(personData)
