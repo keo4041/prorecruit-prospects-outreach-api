@@ -127,8 +127,7 @@ async function handleEnrichment() {
     try {
         const prospectsToEnrichQuery = db.collection('prospects')
             .where('enrichmentSuccess', '!=', true) // Primary condition
-            .where('linkedinUrl', '!=', "") // Primary condition
-            .where('outreachStatus', '!=', OUTREACH_STATUS.DO_NOT_CONTACT) // Optional: Avoid enriching DNC
+            .where('linkedinUrlFound', '==', true) // Primary condition
             .limit(MAX_PROSPECTS_TO_ENRICH_PER_RUN);
 
         const snapshot = await prospectsToEnrichQuery.get();
