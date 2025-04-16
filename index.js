@@ -1,7 +1,6 @@
 const functions = require('@google-cloud/functions-framework');
 const admin = require('firebase-admin');
 const {logger} = require("firebase-functions");
-
 const { enrichProspectWithProxycurl } = require('./proxycurlHelper');
 const { updateProspect } = require('./firestoreHelper');
 const { sendEmail } = require('./sendgridHelper');
@@ -20,6 +19,7 @@ let db;
 let isInitialized = false;
 
 function initialize() {
+    logger.info('Initializing...');                                 
     if (isInitialized) return;
     try {
         admin.initializeApp();
@@ -105,8 +105,8 @@ function prepareTemplateData(prospectData) {
         // Add other fields used in your templates:
         // companySize: prospectData.numberOfEmployees || "N/A", // Assuming you have this field mapped
         // industry: prospectData.industry || "N/A",
-        // companyCountry: prospectData.country || "N/A",
-        // companyCity: prospectData.city || "N/A",
+        companyCountry: prospectData.country || "N/A",
+        companyCity: prospectData.city || "N/A",
         unsubscribeUrl: unsubscribeUrl, // CRITICAL for compliance
         // You might need specific fields for different templates
     };
@@ -364,6 +364,8 @@ async function handleFollowupEmails() {
 // --- Cloud Function Entry Point ---
 functions.http('processProspects', async (req, res) => {
     // Initialize on first invocation (or cold start)
+    console.log("Initializing... - console");
+    logger.info('Initializing... - logger');
     try {
         initialize();
     } catch (initError) {
