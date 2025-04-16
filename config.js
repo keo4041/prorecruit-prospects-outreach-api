@@ -1,0 +1,97 @@
+const admin = require('firebase-admin');
+
+// --- Limits ---
+const MAX_PROSPECTS_TO_ENRICH_PER_RUN = 5; // Adjust based on budget/time
+const MAX_INITIAL_EMAILS_PER_RUN = 25;     // Target weekly send list size
+const MAX_FOLLOWUP_EMAILS_PER_RUN = 75;   // Adjust as needed
+
+// --- Statuses ---
+const EMAIL_STATUS = {
+    PENDING: 'pending',
+    VERIFIED: 'verified',
+    FAILED: 'lookup_failed', // Consistent with task description
+    PROCESSING: 'enrichment_inprogress', // Optional: To prevent re-processing during run
+};
+
+const OUTREACH_STATUS = {
+    PENDING_UPLOAD: 'pending_upload', // Ready for first email
+    ENRICHMENT_FAILED: 'enrichment_failed', // If enrichment fails badly
+    SEQUENCE_STARTED: 'sequence_started', // First email sent
+    FOLLOWUP_1: 'followup_1',           // Follow-up 1 sent
+    FOLLOWUP_2: 'followup_2',           // Follow-up 2 sent (add more if needed)
+    // Add terminal statuses mentioned in task (reply handling is manual/external for now)
+    REPLIED_POSITIVE: 'replied_positive',
+    REPLIED_NEGATIVE: 'replied_negative',
+    MEETING_BOOKED: 'meeting_booked',
+    UNSUBSCRIBED: 'unsubscribed',
+    DO_NOT_CONTACT: 'do_not_contact', // For compliance
+};
+
+// --- Follow-up Logic ---
+const FOLLOWUP_INTERVALS_DAYS = {
+    [OUTREACH_STATUS.SEQUENCE_STARTED]: 2, // Send Followup 1, 2 days after initial send
+    [OUTREACH_STATUS.FOLLOWUP_1]: 3,       // Send Followup 2, 3 days after Followup 1 (Total 5 days)
+    // Add more intervals if needed
+};
+
+function getFollowupDueDate(lastContactedTimestamp, currentOutreachStatus) {
+    if (!lastContactedTimestamp || !FOLLOWUP_INTERVALS_DAYS[currentOutreachStatus]) {
+        return null;
+    }
+    const dueDate = new Date(lastContactedTimestamp.toDate()); // Convert Firestore Timestamp to JS Date
+    dueDate.setDate(dueDate.getDate() + FOLLOWUP_INTERVALS_DAYS[currentOutreachStatus]);
+    return admin.firestore.Timestamp.fromDate(dueDate);
+}
+
+// --- SendGrid Template IDs ---
+// Structure: marketing_outreach_{type}_{lang}_{country/general}
+const TEMPLATE_IDS = {
+    initial: {
+        en_US: process.env.SG_TPL_INIT_EN_US || 'marketing_outreach_initial_en_US', // Use env vars or defaults
+        en_CA: process.env.SG_TPL_INIT_EN_CA || 'marketing_outreach_initial_en_CA',
+        fr_CA: process.env.SG_TPL_INIT_FR_CA || 'marketing_outreach_initial_fr_CA',
+        fr_FR: process.env.SG_TPL_INIT_FR_FR || 'marketing_outreach_initial_fr_FR',
+        fr_BE: process.env.SG_TPL_INIT_FR_BE || 'marketing_outreach_initial_fr_BE',
+        fr_CH: process.env.SG_TPL_INIT_FR_CH || 'marketing_outreach_initial_fr_CH',
+        fr_general: process.env.SG_TPL_INIT_FR_GEN || 'marketing_outreach_initial_fr_general',
+        en_general: process.env.SG_TPL_INIT_EN_GEN || 'marketing_outreach_initial_en_general',
+    },
+    followup: { // Assumes one followup template per locale for Day 3
+        en_US: process.env.SG_TPL_FU_EN_US || 'marketing_outreach_followup_en_US',
+        en_CA: process.env.SG_TPL_FU_EN_CA || 'marketing_outreach_followup_en_CA',
+        fr_CA: process.env.SG_TPL_FU_FR_CA || 'marketing_outreach_followup_fr_CA',
+        fr_FR: process.env.SG_TPL_FU_FR_FR || 'marketing_outreach_followup_fr_FR',
+        fr_BE: process.env.SG_TPL_FU_FR_BE || 'marketing_outreach_followup_fr_BE',
+        fr_CH: process.env.SG_TPL_FU_FR_CH || 'marketing_outreach_followup_fr_CH',
+        fr_general: process.env.SG_TPL_FU_FR_GEN || 'marketing_outreach_followup_fr_general',
+        en_general: process.env.SG_TPL_FU_EN_GEN || 'marketing_outreach_followup_en_general',
+    }
+};
+
+function determineTemplateId(prospectData, emailType = 'initial') {
+    const lang = prospectData.language?.toLowerCase() || 'en'; // Default to 'en'
+    const country = prospectData.country?.toUpperCase() || 'GENERAL'; // Default to 'GENERAL'
+    const key = `${lang}_${country}`;
+    const generalKey = `${lang}_general`;
+
+    const templateSet = TEMPLATE_IDS[emailType];
+    if (!templateSet) {
+        console.error(`Invalid email type for template lookup: ${emailType}`);
+        return null;
+    }
+
+    // Try specific locale, then general locale, then null
+    return templateSet[key] || templateSet[generalKey] || null;
+}
+
+
+module.exports = {
+    MAX_PROSPECTS_TO_ENRICH_PER_RUN,
+    MAX_INITIAL_EMAILS_PER_RUN,
+    MAX_FOLLOWUP_EMAILS_PER_RUN,
+    EMAIL_STATUS,
+    OUTREACH_STATUS,
+    FOLLOWUP_INTERVALS_DAYS,
+    getFollowupDueDate,
+    determineTemplateId,
+};
