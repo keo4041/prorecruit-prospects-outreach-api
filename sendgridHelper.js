@@ -16,11 +16,11 @@ const sgMail = require('@sendgrid/mail');
  * @return {Promise<void>}
  */
 async function sendEmail(toEmail, templateId, templateData, options = {}, logger) {
-    if (!process.env.SENDGRID_API_KEY) {
+    if (!process.env.SENDGRID_API_KEY_PATH) {
         logger.error("SENDGRID_API_KEY not set. Cannot send email.");
         throw new Error("SENDGRID_API_KEY not set.");
     }
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY_PATH);
 
     logger.info(`Preparing email to ${toEmail} using template ${templateId}`);
     // console.log("Template Data:", templateData); // Sensitive data, maybe log less
@@ -45,7 +45,7 @@ async function sendEmail(toEmail, templateId, templateData, options = {}, logger
         // Standard SendGrid Unsubscribe Group (replace with your actual group ID)
         asm: {
             group_id: parseInt(process.env.SENDGRID_MARKETING_UNSUB_GROUP_ID || "24255", 10), // Use env var
-            groups_to_display: [parseInt(process.env.SENDGRID_MARKETING_UNSUB_GROUP_ID || "24255", 10)], // Use the same group ID
+            groups_to_display: parseInt(process.env.SENDGRID_MARKETING_UNSUB_GROUP_ID, 10) || [24255, 27845], // Use the same group ID
         },
         dynamicTemplateData: templateData,
         // Conditionally add optional parameters

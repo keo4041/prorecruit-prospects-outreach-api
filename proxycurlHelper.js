@@ -2,7 +2,7 @@ const axios = require('axios');
 const admin = require('firebase-admin');
 const { EMAIL_STATUS } = require('./config');
 
-const PROXYCURL_API_KEY = process.env.PROXYCURL_API_KEY;
+const PROXYCURL_API_KEY = process.env.PROXYCURL_API_KEY_PATH;
 const PROXYCURL_HEADERS = { 'Authorization': `Bearer ${PROXYCURL_API_KEY}` };
 const PERSON_PROFILE_URL = 'https://nubela.co/proxycurl/api/v2/linkedin';
 const WORK_EMAIL_LOOKUP_URL = 'https://nubela.co/proxycurl/api/linkedin/profile/email'; // Adjust if different
