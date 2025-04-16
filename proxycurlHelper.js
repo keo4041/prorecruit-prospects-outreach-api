@@ -19,7 +19,12 @@ async function enrichProspectWithProxycurl(prospectData, logger) {
         return { success: false, error: 'Missing API Key', updateData: { emailStatus: EMAIL_STATUS.FAILED, enrichmentTimestamp: admin.firestore.Timestamp.now(), enrichmentSuccess: false } };
     }
 
-    const linkedinUrl = prospectData.linkedinUrl;
+    let  linkedinUrl = prospectData.linkedinUrl;
+    
+    if ( linkedinUrl && linkedinUrl.substring(0, 8) === "linkedin") {
+        linkedinUrl = "https://www." + prospectData.linkedinUrl;
+      }
+
     if (!linkedinUrl) {
         logger.warn(`Prospect ${prospectData.id} missing linkedinUrl. Skipping enrichment.`);
         return { success: false, error: 'Missing LinkedIn URL', updateData: { emailStatus: EMAIL_STATUS.FAILED, enrichmentTimestamp: admin.firestore.Timestamp.now(), enrichmentSuccess: false } }; // Mark as failed
