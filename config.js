@@ -1,5 +1,10 @@
 const admin = require('firebase-admin');
+const countries = require('i18n-iso-countries');
 
+// Register the languages you need (English and French)
+// This loads the country name data for these languages
+countries.registerLocale(require("i18n-iso-countries/langs/en.json"));
+countries.registerLocale(require("i18n-iso-countries/langs/fr.json"));
 // --- Limits ---
 const MAX_PROSPECTS_TO_ENRICH_PER_RUN = 2; // Adjust based on budget/time
 const MAX_INITIAL_EMAILS_PER_RUN = 25;     // Target weekly send list size
@@ -70,7 +75,7 @@ const TEMPLATE_IDS = {
 
 function determineTemplateId(prospectData, emailType = 'initial') {
     const lang = prospectData.language?.toLowerCase() || 'en'; // Default to 'en'
-    const country = prospectData.country?.toUpperCase() || 'GENERAL'; // Default to 'GENERAL'
+    const country = getCountryISO2Code(prospectData.country) || 'GENERAL'; // Default to 'GENERAL'
     const key = `${lang}_${country}`;
     const generalKey = `${lang}_general`;
 
@@ -83,6 +88,36 @@ function determineTemplateId(prospectData, emailType = 'initial') {
     // Try specific locale, then general locale, then null
     return templateSet[key] || templateSet[generalKey] || null;
 }
+
+/**
+ * Transforms a full country name (English or French) into its ISO 3166-1 alpha-2 code.
+ *
+ * @param {string} countryName The full name of the country in English or French.
+ * @returns {string | null} The uppercase 2-letter ISO code (e.g., 'US', 'FR')
+ * or null if the country name is not found or invalid.
+ */
+function getCountryISO2Code(countryName) {
+    // Basic validation for input
+    if (typeof countryName !== 'string' || countryName.trim() === '') {
+      console.warn(`Invalid input: Expected a non-empty string, received ${typeof countryName}`);
+      return null;
+    }
+  
+    // Trim whitespace for robustness
+    const trimmedName = countryName.trim();
+  
+    // Try to get the code using the English name database
+    // The library is generally case-insensitive for lookups.
+    let isoCode = countries.getAlpha2Code(trimmedName, 'en');
+  
+    // If not found in English, try the French name database
+    if (!isoCode) {
+      isoCode = countries.getAlpha2Code(trimmedName, 'fr');
+    }
+  
+    // Return the code if found, otherwise return null
+    return isoCode || null;
+  }
 
 
 module.exports = {
