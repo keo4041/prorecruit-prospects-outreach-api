@@ -16,6 +16,7 @@ const sgMail = require('@sendgrid/mail');
  * @return {Promise<void>}
  */
 async function sendEmail(toEmail, templateId, templateData, options = {}, logger) {
+    logger.info(`Sending email to ${toEmail} using template ${templateId}`);
     if (!process.env.SENDGRID_API_KEY_PATH) {
         logger.error("SENDGRID_API_KEY not set. Cannot send email.");
         throw new Error("SENDGRID_API_KEY not set.");

@@ -198,7 +198,7 @@ async function handleInitialEmails() {
         for (const doc of snapshot.docs) {
             const prospectId = doc.id;
             const prospectData = { id: prospectId, ...doc.data() };
-            const recipientEmail = prospectData.workEmail || prospectData.email; // Prefer verified work email
+            const recipientEmail = prospectData.workEmail || prospectData.email || prospectData.personal_emails; // Prefer verified work email
 
             if (!recipientEmail) {
                 logger.warn(`Prospect ${prospectId} has verified status but no email address. Skipping.`);
