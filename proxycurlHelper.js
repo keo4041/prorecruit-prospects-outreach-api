@@ -7,6 +7,8 @@ const PROXYCURL_HEADERS = { Authorization: `Bearer ${PROXYCURL_API_KEY}` };
 const PERSON_PROFILE_URL = "https://nubela.co/proxycurl/api/v2/linkedin";
 const WORK_EMAIL_LOOKUP_URL =
   "https://nubela.co/proxycurl/api/linkedin/profile/email"; // Adjust if different
+  const PERSONAL_EMAIL_LOOKUP_URL =
+    "https://nubela.co/proxycurl/api/contact-api/personal-email"; // Adjust if different
 
 /**
  * Enriches a prospect using Proxycurl.
@@ -235,8 +237,7 @@ async function enrichProspectWithProxycurl(prospectData, logger) {
     );
     const emailLookupParams = {
       linkedin_profile_url: linkedinUrl,
-      ...(companyDomain && { company_domain: companyDomain }), // Conditionally add domain
-      // Add other params like 'title', 'location' if needed by the endpoint
+      callback_url: process.env.PROXYCURL_CALLBACK_URL,
     };
 
     const emailResponse = await axios.get(WORK_EMAIL_LOOKUP_URL, {
@@ -266,6 +267,41 @@ async function enrichProspectWithProxycurl(prospectData, logger) {
       updateData.emailStatus = EMAIL_STATUS.FAILED;
       finalEmailStatus = EMAIL_STATUS.FAILED;
     }
+    // get and add personal email from proxycurl
+    
+    const personalEmailLookupParams = {
+        linkedin_profile_url: linkedinUrl,
+        'email_validation': 'include',
+        'page_size': '1',
+      };
+  
+      const personalEmailResponse = await axios.get(PERSONAL_EMAIL_LOOKUP_URL, {
+        headers: PROXYCURL_HEADERS,
+        params: personalEmailLookupParams,
+        timeout: 45000, // Longer timeout for email lookup
+      });
+      personalEmailData = personalEmailResponse.data;
+      logger.info(personalEmailData)
+      if (
+        personalEmailData &&
+        personalEmailData.length > 0
+      ) {
+        updateData.personalEmail = personalEmailData.emails[0];
+        updateData.invalid_emails = personalEmailData.invalid_emails || [];
+        updateData.emailStatus = EMAIL_STATUS.VERIFIED;
+        finalEmailStatus = EMAIL_STATUS.VERIFIED; // Success!
+        logger.info(
+          `Verified personal email found for ${linkedinUrl}: ${personalEmailData[0].email}`
+        );
+      } else {
+        logger.warn(
+          `personal email lookup failed or not verified for ${linkedinUrl}.`
+        );
+      }
+    
+    updateData.emailStatus = finalEmailStatus;
+    
+    
   } catch (error) {
     success = false;
     logger.error(
