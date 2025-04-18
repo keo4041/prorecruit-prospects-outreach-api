@@ -54,10 +54,10 @@ function initialize() {
     db = admin.firestore();
 
     // Initialize Vertex AI Client
-    const projectId = process.env.GCLOUD_PROJECT; // Automatically available in Cloud Functions
+    const projectId = process.env.GCLOUD_PROJECT || "interview-412415"; // Automatically available in Cloud Functions
     const location = process.env.VERTEX_AI_LOCATION || "us-central1"; // Set via env var or default
-    if (!projectId) {
-      throw new Error("GCLOUD_PROJECT environment variable not set.");
+    if (!projectId || !location) {
+      throw new Error(`GCLOUD_PROJECT or VERTEX_AI_LOCATION environment variable not set. projectId: ${projectId}, location: ${location}`);
     }
     vertexai = new VertexAI({ project: projectId, location: location });
     logger.info(
