@@ -850,7 +850,7 @@ async function handleAiInitialEmail() {
  */
 function buildVertexPrompt(prospectData) {
   // Determine language (default logic, adjust as needed)
-  let language = prospectData.language || "English"; // Default to English
+  let language = prospectData.language.toLowerCase() === "fr"? "French": prospectData.language || "English"; // Default to English
   if (!prospectData.language) {
     switch (prospectData.country?.toLowerCase()) {
       case "france":
@@ -900,15 +900,15 @@ function buildVertexPrompt(prospectData) {
 * \`[interests]\`: ${prospectData.interests || ""}
 * \`[volunteer_work]\`: ${prospectData.volunteer_work || ""}
 * \`[CompanyName]\`: ${
-    prospectData.companyName || prospectData.company || "your company"
+    prospectData.companyName || prospectData.company || ""
   }
 * \`[Country]\`: ${prospectData.country || "N/A"}
 * \`[Language]\`: ${language}
 
 **Instructions for Email Generation:**
-1.  **Personalization:** Use \`[FirstName]\`,\`[LastName]\`, \`[JobTitle]\`, \`[CompanyName]\`.
+1.  **Personalization:** Use \`[FirstName]\`,\`[LastName]\`, \`[JobTitle]\`, \`[CompanyName]\`, \`[occupation]\`, \`[LinkedInSummary]\`, \`[LinkedInHeadline]\`, \`[industry]\`, \`[experiences]\`, \`[groups]\`, \`[interests]\`, \`[volunteer_work]\`, \`[Language]\`, and \`[Country]\` to personalize the email.
 2.  **Value Proposition & Pain Points:** Identify 1-2 probable pain points based on ICP and Contact Info. Connect ProRecruit.tech features directly as solutions.
-3.  **Tone & Etiquette:** Adapt formality based on \`[Country]\` and \`[Language]\` (French: formal 'vous'; US: professional but slightly less formal). Be respectful, helpful, not overly salesy.
+3.  **Language, Formality, Tone & Etiquette:** Adapt formality based on \`[Country]\` and \`[Language]\` (French: formal 'vous'; US: professional but slightly less formal). Be respectful, helpful, not overly salesy.
 4.  **Structure & Best Practices:** Generate SUBJECT (short, personalized, benefit-oriented) and BODY (hook, pain/solution, low-commitment CTA maybe add my booking page url: https://calendar.app.google/YCJdfWBPQKEzvEN69). Keep body paragraphs short. NO GREETING ("Hi Name," or "Name,"). NO SIGN-OFF ("Regards,").
 5.  **Output:** Respond ONLY with the JSON object containing 'subject' and 'body' fields as defined in the output schema.
 `;
@@ -954,17 +954,17 @@ functions.http("processProspects", async (req, res) => {
     // --- Phase 3: Initial Emails (Needs modification to use AI content) ---
     // For now, it will still try to send based on templates if AI gen failed
     // or if it hasn't run yet for a prospect.
-    // const initialEmailStats = await handleInitialEmails();
+    const initialEmailStats = await handleInitialEmails();
 
     // --- Phase 4: Follow-up Emails ---
-    // const followupEmailStats = await handleFollowupEmails();
+    const followupEmailStats = await handleFollowupEmails();
 
     logger.info("Prospect processing finished successfully.");
     res.status(200).send(
       `OK. Enriched: ${enrichmentStats.successful}/${enrichmentStats.processed}. ` +
-      `AI Generated: ${aiGenerationStats.generated} (Errors: ${aiGenerationStats.errors}). ` //+ // Added AI stats
-        // `Initial Sent: ${initialEmailStats.sent} (Errors: ${initialEmailStats.errors}). ` +
-        // `Follow-up Sent: ${followupEmailStats.sent} (Errors: ${followupEmailStats.errors}).`
+      `AI Generated: ${aiGenerationStats.generated} (Errors: ${aiGenerationStats.errors}). ` + // Added AI stats
+        `Initial Sent: ${initialEmailStats.sent} (Errors: ${initialEmailStats.errors}). ` +
+        `Follow-up Sent: ${followupEmailStats.sent} (Errors: ${followupEmailStats.errors}).`
     );
   } catch (error) {
     logger.error("Unhandled error in processProspects function:", error);

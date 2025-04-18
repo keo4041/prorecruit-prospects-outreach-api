@@ -264,7 +264,7 @@ async function enrichProspectWithProxycurl(prospectData, logger) {
         `Work email lookup failed or not verified for ${linkedinUrl}. Status: ${workEmailData?.status}, Email: ${workEmailData?.email}`
       );
       // Keep enrichment data from profile step, but mark email as failed.
-      updateData.workEmail = workEmailData.email;
+      updateData.workEmail = workEmailData.email || "";
       updateData.emailStatus = EMAIL_STATUS.FAILED;
       finalEmailStatus = EMAIL_STATUS.FAILED;
     }
@@ -287,8 +287,8 @@ async function enrichProspectWithProxycurl(prospectData, logger) {
         personalEmailData &&
         personalEmailData.length > 0
       ) {
-        updateData.personalEmail = personalEmailData.emails[0];
-        updateData.personal_emails = personalEmailData.emails;
+        updateData.personalEmail = personalEmailData.emails[0] || "";
+        updateData.personal_emails = personalEmailData.emails || [];
         updateData.invalid_emails = personalEmailData.invalid_emails || [];
         updateData.emailStatus = EMAIL_STATUS.VERIFIED;
         finalEmailStatus = EMAIL_STATUS.VERIFIED; // Success!
