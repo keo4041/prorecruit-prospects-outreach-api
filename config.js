@@ -9,6 +9,7 @@ countries.registerLocale(require("i18n-iso-countries/langs/fr.json"));
 const MAX_PROSPECTS_TO_ENRICH_PER_RUN = 2; // Adjust based on budget/time
 const MAX_INITIAL_EMAILS_PER_RUN = 25;     // Target weekly send list size
 const MAX_FOLLOWUP_EMAILS_PER_RUN = 75;   // Adjust as needed
+const MAX_AI_EMAILS_PER_RUN = 15;
 
 // --- Statuses ---
 const EMAIL_STATUS = {
@@ -24,6 +25,7 @@ const OUTREACH_STATUS = {
     SEQUENCE_STARTED: 'sequence_started', // First email sent
     FOLLOWUP_1: 'followup_1',           // Follow-up 1 sent
     FOLLOWUP_2: 'followup_2',           // Follow-up 2 sent (add more if needed)
+    MOVED_TO_LEADS: 'move_to_leads',
     // Add terminal statuses mentioned in task (reply handling is manual/external for now)
     REPLIED_POSITIVE: 'replied_positive',
     REPLIED_NEGATIVE: 'replied_negative',
@@ -124,6 +126,7 @@ module.exports = {
     MAX_PROSPECTS_TO_ENRICH_PER_RUN,
     MAX_INITIAL_EMAILS_PER_RUN,
     MAX_FOLLOWUP_EMAILS_PER_RUN,
+    MAX_AI_EMAILS_PER_RUN,
     EMAIL_STATUS,
     OUTREACH_STATUS,
     FOLLOWUP_INTERVALS_DAYS,
