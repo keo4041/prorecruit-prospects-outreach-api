@@ -622,7 +622,7 @@ function cleanString(str) {
     if (firstBraceIndex > 0) {
       cleaned = cleaned.substring(firstBraceIndex);
     }
-    cleaned = cleaned.replace(/\/\/[^\n]*\n/g, ""); // removes comments
+    //cleaned = cleaned.replace(/\/\/[^\n]*\n/g, ""); // removes comments
     return cleaned.trim();
   } 
 
