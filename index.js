@@ -57,7 +57,9 @@ function initialize() {
     const projectId = process.env.GCP_PROJECT || "interview-412415"; // Automatically available in Cloud Functions
     const location = process.env.GCP_REGION || "us-central1"; // Set via env var or default
     if (!projectId || !location) {
-      throw new Error(`GCLOUD_PROJECT or GCP_REGION environment variable not set. projectId: ${projectId}, location: ${location}`);
+      throw new Error(
+        `GCLOUD_PROJECT or GCP_REGION environment variable not set. projectId: ${projectId}, location: ${location}`
+      );
     }
     vertexai = new VertexAI({ project: projectId, location: location });
     logger.info(
@@ -77,7 +79,6 @@ function initialize() {
 
 // --- Helper Functions ---
 
-
 /**
  * Prepares SendGrid options including tracking and custom args.
  * @param {object} prospectData - Prospect data from Firestore.
@@ -91,10 +92,10 @@ function prepareSendgridOptions(prospectData, emailType, aiEmailData = null) {
     prospectData.country || "na"
   }`;
   const utmTerm = `${emailType}-${prospectData.segment || "default"}`; // Example term
-    // Use AI subject for utmContent if available, otherwise fallback to template ID
-    const utmContentBase = aiEmailData?.subject
-        ? `ai-${aiEmailData.subject.substring(0, 30).replace(/ /g,'_')}` // Shortened/slugified AI subject
-        : `template-${determineTemplateId(prospectData, emailType) || 'unknown'}`;
+  // Use AI subject for utmContent if available, otherwise fallback to template ID
+  const utmContentBase = aiEmailData?.subject
+    ? `ai-${aiEmailData.subject.substring(0, 30).replace(/ /g, "_")}` // Shortened/slugified AI subject
+    : `template-${determineTemplateId(prospectData, emailType) || "unknown"}`;
 
   return {
     categories: [
@@ -605,27 +606,26 @@ async function handleFollowupEmails() {
   return { sent: sentCount, errors: errorCount };
 }
 
-
 // Cleans strings to prevent prompt injection
 
 function cleanString(str) {
-    // Remove backticks and any surrounding text
-    let cleaned = str.trim();
-    if (cleaned.startsWith("```json")) {
-      cleaned = cleaned.substring(7);
-    }
-    if (cleaned.endsWith("```")) {
-      cleaned = cleaned.substring(0, cleaned.length - 3);
-    }
-  
-    // Remove any additional text before the opening brace
-    const firstBraceIndex = cleaned.indexOf("{");
-    if (firstBraceIndex > 0) {
-      cleaned = cleaned.substring(firstBraceIndex);
-    }
-    //cleaned = cleaned.replace(/\/\/[^\n]*\n/g, ""); // removes comments
-    return cleaned.trim();
-  } 
+  // Remove backticks and any surrounding text
+  let cleaned = str.trim();
+  if (cleaned.startsWith("```json")) {
+    cleaned = cleaned.substring(7);
+  }
+  if (cleaned.endsWith("```")) {
+    cleaned = cleaned.substring(0, cleaned.length - 3);
+  }
+
+  // Remove any additional text before the opening brace
+  const firstBraceIndex = cleaned.indexOf("{");
+  if (firstBraceIndex > 0) {
+    cleaned = cleaned.substring(firstBraceIndex);
+  }
+  //cleaned = cleaned.replace(/\/\/[^\n]*\n/g, ""); // removes comments
+  return cleaned.trim();
+}
 
 /**
  * Generates initial email content using Vertex AI for prospects.
@@ -646,7 +646,8 @@ async function handleAiInitialEmail() {
   const generativeModel = vertexai.getGenerativeModel({
     model: "gemini-2.0-flash", // Or your preferred Gemini model
     generation_config: { temperature: 0.7 }, // Adjust temp as needed
-    safetySettings: [ // Keep safety settings
+    safetySettings: [
+      // Keep safety settings
       {
         category: "HARM_CATEGORY_HATE_SPEECH",
         threshold: "BLOCK_MEDIUM_AND_ABOVE",
@@ -672,7 +673,7 @@ async function handleAiInitialEmail() {
       .where("enrichmentSuccess", "==", true)
       .where("aiInitialEmailTemplate", "!=", true) // Check it hasn't been generated
       // Add other conditions if needed (e.g., specific outreach status)
-      .where('outreachStatus', '==', OUTREACH_STATUS.PENDING_UPLOAD) // Ensure ready state
+      .where("outreachStatus", "==", OUTREACH_STATUS.PENDING_UPLOAD) // Ensure ready state
       .limit(MAX_AI_EMAILS_PER_RUN);
 
     const snapshot = await prospectsToGenerateQuery.get();
@@ -722,20 +723,18 @@ async function handleAiInitialEmail() {
       ); // Log truncated prompt
 
       try {
-        
-      const generationConfig = {
-        responseMimeType: "application/json",
-        responseSchema: vertexAiOutputSchema,
-      };
-      const req = {
-        contents: [{ role: "user", parts: [{ text: promptText }] }],
-        generationConfig,
+        const generationConfig = {
+          responseMimeType: "application/json",
+          responseSchema: vertexAiOutputSchema,
+        };
+        const req = {
+          contents: [{ role: "user", parts: [{ text: promptText }] }],
+          generationConfig,
+        };
 
-      };
-        
-    const response = await generativeModel.generateContent(req);
-    const aggregatedResponse = await response.response;
-    logger.info(aggregatedResponse)
+        const response = await generativeModel.generateContent(req);
+        const aggregatedResponse = await response.response;
+        logger.info(aggregatedResponse);
 
         // --- Process Vertex AI Response ---
         if (
@@ -744,9 +743,11 @@ async function handleAiInitialEmail() {
           aggregatedResponse.candidates[0].content &&
           aggregatedResponse.candidates[0].content.parts &&
           aggregatedResponse.candidates[0].content.parts[0].text &&
-          aggregatedResponse.candidates[0].content.parts[0].text.length > 0 
+          aggregatedResponse.candidates[0].content.parts[0].text.length > 0
         ) {
-          const generatedArgs = JSON.parse(cleanString(aggregatedResponse.candidates[0].content.parts[0].text));
+          const generatedArgs = JSON.parse(
+            cleanString(aggregatedResponse.candidates[0].content.parts[0].text)
+          );
 
           // Validate response structure (simple check)
           if (generatedArgs && generatedArgs.subject && generatedArgs.body) {
@@ -851,7 +852,10 @@ async function handleAiInitialEmail() {
  */
 function buildVertexPrompt(prospectData) {
   // Determine language (default logic, adjust as needed)
-  let language = prospectData.language.toLowerCase() === "fr"? "French": prospectData.language || "English"; // Default to English
+  let language =
+    prospectData.language.toLowerCase() === "fr"
+      ? "French"
+      : prospectData.language || "English"; // Default to English
   if (!prospectData.language) {
     switch (prospectData.country?.toLowerCase()) {
       case "france":
@@ -875,7 +879,7 @@ function buildVertexPrompt(prospectData) {
   // --- Base Prompt Text (Copied from your previous request) ---
   const basePrompt = `**Role:** You are an expert B2B copywriter specializing in crafting personalized, high-value cold emails for SaaS solutions targeting HR and recruitment professionals.
 
-**Goal:** Generate a concise, compelling, and culturally appropriate initial cold email SUBJECT and BODY for a specific contact based on the provided details. The email should introduce ProRecruit.tech, highlight its value proposition relevant to the contact's likely pain points, and encourage a low-friction next step. Return ONLY the JSON object matching the requested function schema.
+**Goal:** Generate a concise, compelling, and culturally appropriate initial cold email in the provided language SUBJECT and BODY for a specific contact based on the provided details. The email should introduce ProRecruit.tech, highlight its value proposition relevant to the contact's likely pain points, and encourage a low-friction next step. Return ONLY the JSON object matching the requested function schema.
 
 **Product Information:**
 * **Product Name:** ProRecruit.tech
@@ -900,9 +904,7 @@ function buildVertexPrompt(prospectData) {
 * \`[groups]\`: ${prospectData.groups || ""}
 * \`[interests]\`: ${prospectData.interests || ""}
 * \`[volunteer_work]\`: ${prospectData.volunteer_work || ""}
-* \`[CompanyName]\`: ${
-    prospectData.companyName || prospectData.company || ""
-  }
+* \`[CompanyName]\`: ${prospectData.companyName || prospectData.company || ""}
 * \`[Country]\`: ${prospectData.country || "N/A"}
 * \`[Language]\`: ${language}
 
@@ -951,13 +953,34 @@ functions.http("processProspects", async (req, res) => {
     // --- Phase 2: AI Email Generation --- << NEW STEP
     const aiGenerationStats = await handleAiInitialEmail();
 
-    // --- Phase 3: Initial Emails (Needs modification to use AI content) ---
-    // For now, it will still try to send based on templates if AI gen failed
-    // or if it hasn't run yet for a prospect.
-    const initialEmailStats = await handleInitialEmails();
+    // --- Initialize Stats Variables ---
+    // Initialize stats here so they exist even if the block is skipped
+    let initialEmailStats = { sent: 0, errors: 0 };
+    let followupEmailStats = { sent: 0, errors: 0 };
+    // --- Check Day of Week ---
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+    const isWeekdayToSend = dayOfWeek >= 2 && dayOfWeek <= 5; // Check if Tuesday to Friday
 
-    // --- Phase 4: Follow-up Emails ---
-    const followupEmailStats = await handleFollowupEmails();
+    logger.info(
+      `Current day of week: ${dayOfWeek}. Is sending day (Tue-Fri)? ${isWeekdayToSend}`
+    );
+
+    // --- Phase 3 & 4: Conditional Email Sending ---
+    if (isWeekdayToSend) {
+      logger.info("Executing email sending phases (Tuesday-Friday).");
+
+      // --- Phase 3: Initial Emails ---
+      // Run only on Tue, Wed, Thu, Fri
+      initialEmailStats = await handleInitialEmails();
+
+      // --- Phase 4: Follow-up Emails ---
+      // Run only on Tue, Wed, Thu, Fri
+      followupEmailStats = await handleFollowupEmails();
+    } else {
+      logger.info("Skipping email sending phases (Not Tuesday-Friday).");
+      // initialEmailStats and followupEmailStats will keep their initial { sent: 0, errors: 0 } values
+    }
 
     logger.info("Prospect processing finished successfully.");
     res.status(200).send(
