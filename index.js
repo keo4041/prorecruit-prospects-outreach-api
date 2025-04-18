@@ -254,7 +254,7 @@ async function handleInitialEmails() {
   try {
     const prospectsToSendQuery = db
       .collection("prospects")
-      .where("emailStatus", "==", EMAIL_STATUS.VERIFIED)
+      .where("enrichmentSuccess", "==", true)
       .where("outreachStatus", "==", OUTREACH_STATUS.PENDING_UPLOAD)
       .limit(MAX_INITIAL_EMAILS_PER_RUN);
 
@@ -671,7 +671,7 @@ async function handleAiInitialEmail() {
       .where("enrichmentSuccess", "==", true)
       .where("aiInitialEmailTemplate", "!=", true) // Check it hasn't been generated
       // Add other conditions if needed (e.g., specific outreach status)
-      // .where('outreachStatus', '==', OUTREACH_STATUS.PENDING_UPLOAD) // Ensure ready state
+      .where('outreachStatus', '==', OUTREACH_STATUS.PENDING_UPLOAD) // Ensure ready state
       .limit(MAX_AI_EMAILS_PER_RUN);
 
     const snapshot = await prospectsToGenerateQuery.get();
@@ -879,7 +879,7 @@ function buildVertexPrompt(prospectData) {
 **Product Information:**
 * **Product Name:** ProRecruit.tech
 * **Core Function:** An AI-powered recruitment platform designed to streamline hiring.
-* **Key Features & Solutions:** Automated CV Analysis & Ranking (Saves time screening), Psychoanalytical Assessments (Deeper insights for better cultural/soft skill fit), Bias Elimination Technology (Ensures fairness, compliance), Automated Candidate Notifications (Improves candidate experience), Centralized Candidate Management Interface (Organizes the hiring process).
+* **Key Features & Solutions:** Automated CV Analysis & Ranking (Saves time screening), Psychoanalytical Assessments (Deeper insights for better cultural/soft skill fit), Bias Elimination Technology (Ensures fairness, compliance), Automated Candidate Notifications (Improves candidate experience), Centralized Candidate Management Interface (Organizes the hiring process), ad-hoc email to candidates, tailored technical assessments to the job description.
 
 **Ideal Customer Profile (ICP) Context:**
 * **Target Roles:** HR Managers, Talent Acquisition Specialists/Leads, Recruiters (Primary); HR Directors, VPs, CHROs, CEOs/Founders in smaller tech firms (Secondary).
@@ -898,11 +898,11 @@ function buildVertexPrompt(prospectData) {
 * \`[Language]\`: ${language}
 
 **Instructions for Email Generation:**
-1.  **Personalization:** Use \`[FirstName]\`, \`[JobTitle]\`, \`[CompanyName]\`.
+1.  **Personalization:** Use \`[FirstName]\`,\`[LastName]\`, \`[JobTitle]\`, \`[CompanyName]\`.
 2.  **Value Proposition & Pain Points:** Identify 1-2 probable pain points based on ICP and Contact Info. Connect ProRecruit.tech features directly as solutions.
 3.  **Tone & Etiquette:** Adapt formality based on \`[Country]\` and \`[Language]\` (French: formal 'vous'; US: professional but slightly less formal). Be respectful, helpful, not overly salesy.
-4.  **Structure & Best Practices:** Generate SUBJECT (short, personalized, benefit-oriented) and BODY (hook, pain/solution, low-commitment CTA). Keep body paragraphs short. NO GREETING ("Hi Name,"). NO SIGN-OFF ("Regards,").
-5.  **Output:** Respond ONLY with the JSON object containing 'subject' and 'body' fields as defined in the function declaration.
+4.  **Structure & Best Practices:** Generate SUBJECT (short, personalized, benefit-oriented) and BODY (hook, pain/solution, low-commitment CTA). Keep body paragraphs short. NO GREETING ("Hi Name," or "Name,"). NO SIGN-OFF ("Regards,").
+5.  **Output:** Respond ONLY with the JSON object containing 'subject' and 'body' fields as defined in the output schema.
 `;
   // --- End Base Prompt Text ---
 
