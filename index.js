@@ -604,6 +604,28 @@ async function handleFollowupEmails() {
   return { sent: sentCount, errors: errorCount };
 }
 
+
+// Cleans strings to prevent prompt injection
+
+function cleanString(str) {
+    // Remove backticks and any surrounding text
+    let cleaned = str.trim();
+    if (cleaned.startsWith("```json")) {
+      cleaned = cleaned.substring(7);
+    }
+    if (cleaned.endsWith("```")) {
+      cleaned = cleaned.substring(0, cleaned.length - 3);
+    }
+  
+    // Remove any additional text before the opening brace
+    const firstBraceIndex = cleaned.indexOf("{");
+    if (firstBraceIndex > 0) {
+      cleaned = cleaned.substring(firstBraceIndex);
+    }
+    cleaned = cleaned.replace(/\/\/[^\n]*\n/g, ""); // removes comments
+    return cleaned.trim();
+  } 
+
 /**
  * Generates initial email content using Vertex AI for prospects.
  */
@@ -623,7 +645,24 @@ async function handleAiInitialEmail() {
   const generativeModel = vertexai.getGenerativeModel({
     model: "gemini-2.0-flash", // Or your preferred Gemini model
     generation_config: { temperature: 0.7 }, // Adjust temp as needed
-    tools: [{ function_declarations: [aiEmailGeneratorFunctionDeclaration] }],
+    safetySettings: [ // Keep safety settings
+      {
+        category: "HARM_CATEGORY_HATE_SPEECH",
+        threshold: "BLOCK_MEDIUM_AND_ABOVE",
+      },
+      {
+        category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+        threshold: "BLOCK_MEDIUM_AND_ABOVE",
+      },
+      {
+        category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        threshold: "BLOCK_MEDIUM_AND_ABOVE",
+      },
+      {
+        category: "HARM_CATEGORY_HARASSMENT",
+        threshold: "BLOCK_MEDIUM_AND_ABOVE",
+      },
+    ],
   });
 
   try {
@@ -682,26 +721,31 @@ async function handleAiInitialEmail() {
       ); // Log truncated prompt
 
       try {
-        const chat = generativeModel.startChat({
-          tools: [
-            { function_declarations: [aiEmailGeneratorFunctionDeclaration] },
-          ],
-        });
-        const result = await chat.sendMessage(promptText);
+        
+      const generationConfig = {
+        responseMimeType: "application/json",
+        responseSchema: vertexAiOutputSchema,
+      };
+      const req = {
+        contents: [{ role: "user", parts: [{ text: promptText }] }],
+        generationConfig,
+
+      };
+        
+    const response = await generativeModel.generateContent(req);
+    const aggregatedResponse = await response.response;
+    logger.info(aggregatedResponse)
 
         // --- Process Vertex AI Response ---
         if (
-          result.response &&
-          result.response.candidates &&
-          result.response.candidates[0].content &&
-          result.response.candidates[0].content.parts &&
-          result.response.candidates[0].content.parts[0].functionCall &&
-          result.response.candidates[0].content.parts[0].functionCall.name ===
-            aiEmailGeneratorFunctionDeclaration.name
+          aggregatedResponse &&
+          aggregatedResponse.candidates &&
+          aggregatedResponse.candidates[0].content &&
+          aggregatedResponse.candidates[0].content.parts &&
+          aggregatedResponse.candidates[0].content.parts[0].text &&
+          aggregatedResponse.candidates[0].content.parts[0].text.length > 0 
         ) {
-          const functionCall =
-            result.response.candidates[0].content.parts[0].functionCall;
-          const generatedArgs = functionCall.args;
+          const generatedArgs = JSON.parse(cleanString(aggregatedResponse.candidates[0].content.parts[0].text));
 
           // Validate response structure (simple check)
           if (generatedArgs && generatedArgs.subject && generatedArgs.body) {
@@ -717,8 +761,9 @@ async function handleAiInitialEmail() {
                   subject: generatedArgs.subject,
                   body: generatedArgs.body,
                   // Optionally store model info, timestamp from response etc.
-                  modelUsed: result.response.candidates[0].model, // Example
-                  timestamp: admin.firestore.Timestamp.now(),
+                  usageMetaData: aggregatedResponse.usageMetadata, // Example
+                  modelUsed: aggregatedResponse.modelVersion,
+                  timestamp: aggregatedResponse.createTime,
                 },
                 aiInitialEmailTemplate: true, // Mark as generated
                 aiGenerationTimestamp: admin.firestore.Timestamp.now(),
