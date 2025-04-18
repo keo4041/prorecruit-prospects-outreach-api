@@ -748,7 +748,7 @@ async function handleAiInitialEmail() {
         } else {
           logger.error(
             `Vertex AI response for ${prospectId} did not contain the expected function call. Response:`,
-            JSON.stringify(result.response)
+            JSON.stringify(result)
           );
           await updateProspect(
             prospectId,
