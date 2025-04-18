@@ -9,7 +9,7 @@ countries.registerLocale(require("i18n-iso-countries/langs/fr.json"));
 const MAX_PROSPECTS_TO_ENRICH_PER_RUN = 2; // Adjust based on budget/time
 const MAX_INITIAL_EMAILS_PER_RUN = 25;     // Target weekly send list size
 const MAX_FOLLOWUP_EMAILS_PER_RUN = 75;   // Adjust as needed
-const MAX_AI_EMAILS_PER_RUN = 15;
+const MAX_AI_EMAILS_PER_RUN = 5;
 
 // --- Statuses ---
 const EMAIL_STATUS = {
