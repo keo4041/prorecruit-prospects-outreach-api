@@ -891,6 +891,14 @@ function buildVertexPrompt(prospectData) {
 * \`[FirstName]\`: ${prospectData.firstName || "Recruiter"}
 * \`[LastName]\`: ${prospectData.lastName || ""}
 * \`[JobTitle]\`: ${prospectData.jobTitle || "Hiring Professional"}
+* \`[occupation]\`: ${prospectData.occupation || ""}
+* \`[LinkedInSummary]\`: ${prospectData.summary || ""}
+* \`[LinkedInHeadline]\`: ${prospectData.headline || ""}
+* \`[industry]\`: ${prospectData.industry || ""}
+* \`[experiences]\`: ${prospectData.experiences || ""}
+* \`[groups]\`: ${prospectData.groups || ""}
+* \`[interests]\`: ${prospectData.interests || ""}
+* \`[volunteer_work]\`: ${prospectData.volunteer_work || ""}
 * \`[CompanyName]\`: ${
     prospectData.companyName || prospectData.company || "your company"
   }
@@ -901,7 +909,7 @@ function buildVertexPrompt(prospectData) {
 1.  **Personalization:** Use \`[FirstName]\`,\`[LastName]\`, \`[JobTitle]\`, \`[CompanyName]\`.
 2.  **Value Proposition & Pain Points:** Identify 1-2 probable pain points based on ICP and Contact Info. Connect ProRecruit.tech features directly as solutions.
 3.  **Tone & Etiquette:** Adapt formality based on \`[Country]\` and \`[Language]\` (French: formal 'vous'; US: professional but slightly less formal). Be respectful, helpful, not overly salesy.
-4.  **Structure & Best Practices:** Generate SUBJECT (short, personalized, benefit-oriented) and BODY (hook, pain/solution, low-commitment CTA). Keep body paragraphs short. NO GREETING ("Hi Name," or "Name,"). NO SIGN-OFF ("Regards,").
+4.  **Structure & Best Practices:** Generate SUBJECT (short, personalized, benefit-oriented) and BODY (hook, pain/solution, low-commitment CTA maybe add my booking page url: https://calendar.app.google/YCJdfWBPQKEzvEN69). Keep body paragraphs short. NO GREETING ("Hi Name," or "Name,"). NO SIGN-OFF ("Regards,").
 5.  **Output:** Respond ONLY with the JSON object containing 'subject' and 'body' fields as defined in the output schema.
 `;
   // --- End Base Prompt Text ---
