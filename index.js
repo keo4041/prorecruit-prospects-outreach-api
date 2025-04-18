@@ -621,7 +621,7 @@ async function handleAiInitialEmail() {
   // Define the generative model
   // Ensure model name is correct and supports function calling. Adjust as needed.
   const generativeModel = vertexai.getGenerativeModel({
-    model: "gemini-1.0-pro", // Or your preferred Gemini model
+    model: "gemini-2.0-flash", // Or your preferred Gemini model
     generation_config: { temperature: 0.7 }, // Adjust temp as needed
     tools: [{ function_declarations: [aiEmailGeneratorFunctionDeclaration] }],
   });
