@@ -312,6 +312,7 @@ async function handleInitialEmails() {
 
         // --- Language-Specific Construction ---
         const firstName = prospectData.firstName;
+        const lastName = prospectData.lastName;
         const language = prospectData.language?.toLowerCase(); // Normalize to lowercase, handle potential undefined
         const unsubscribeUrl =
           process.env.UNSUBSCRIBE_URL || `https://app.prorecruit.tech/support`; // Ensure this is defined
@@ -323,12 +324,12 @@ async function handleInitialEmails() {
 
         if (language === "french" || language === "fr") {
           // Use French elements
-          greeting = `Bonjour${firstName ? " " + firstName : ""},`; // "Bonjour Jean," or "Bonjour," if no first name
+          greeting = `Bonjour Mr/Mme${lastName ? " " + lastName : ""},`; // "Bonjour Jean," or "Bonjour," if no first name
           closing = "Cordialement,"; // Standard formal French closing
           unsubscribeText = "Se désabonner"; // French for "Unsubscribe"
 
           // Construct the full body for French email
-          fullBody = `${greeting}\n\n${aiBodyContent}\n\n${closing}\n[Your Name/Team]\n\n---\n${unsubscribeText}: ${unsubscribeUrl}`;
+          fullBody = `${greeting}\n\n${aiBodyContent}\n\n${closing}\nKwami\nhttps://prorecruit.tech/\nRéserver une démo: https://calendar.app.google/YCJdfWBPQKEzvEN69\n\n---\n${unsubscribeText}: ${unsubscribeUrl}`;
         } else {
           // Default to English if language is 'english', null, undefined, or any other value
           greeting = `Hi ${firstName || "there"},`; // "Hi Jane," or "Hi there," if no first name
@@ -336,7 +337,7 @@ async function handleInitialEmails() {
           unsubscribeText = "Unsubscribe"; // English for "Unsubscribe"
 
           // Construct the full body for English email
-          fullBody = `${greeting}\n\n${aiBodyContent}\n\n${closing}\n[Your Name/Team]\n\n---\n${unsubscribeText}: ${unsubscribeUrl}`;
+          fullBody = `${greeting}\n\n${aiBodyContent}\n\n${closing}\nKwami\nhttps://prorecruit.tech/\nBook a demo: https://calendar.app.google/YCJdfWBPQKEzvEN69\n\n---\n${unsubscribeText}: ${unsubscribeUrl}`;
         }
         // --- End Language-Specific Construction ---
 
@@ -924,7 +925,6 @@ function buildVertexPrompt(prospectData) {
 // --- Cloud Function Entry Point ---
 functions.http("processProspects", async (req, res) => {
   // Initialize on first invocation (or cold start)
-  console.log("Initializing... - console", req.get("User-Agent"));
   logger.info("Initializing... - logger", req.get("User-Agent"));
   try {
     initialize();
